@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid'
 import { collectionNames, type CircuitDocument } from './types'
+import { isGridCoordinate } from './grid'
 
 export const SCHEMA_VERSION = 1
 export type Migration = (document: Record<string, unknown>) => Record<string, unknown>
@@ -28,8 +29,8 @@ function integer(value: unknown, minimum = 0): asserts value is number {
 function point(value: unknown, grid: number) {
   record(value)
   for (const coordinate of [value.x, value.y]) {
-    requireValue(typeof coordinate === 'number' && Number.isFinite(coordinate)
-      && Number.isSafeInteger(coordinate / grid), 'position must be on grid')
+    requireValue(typeof coordinate === 'number'
+      && isGridCoordinate(coordinate, grid), 'position must be on grid')
   }
 }
 

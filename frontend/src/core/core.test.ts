@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   builtInSymbols, cloneDocument, collectionNames, createDocument, DocumentHistory, getSymbol,
-  loadDocument, pinPositions, serializeDocument,
+  isGridCoordinate, loadDocument, pinPositions, serializeDocument,
   type CircuitDocument, type Command, type Placement, type Rotation, type WireEndpoint,
 } from './index'
 
@@ -322,13 +322,13 @@ describe('symbols and storage', () => {
         expect(Number.isInteger(pin.position.x)).toBe(true)
         expect(Number.isInteger(pin.position.y)).toBe(true)
       }
-      for (const grid of [1, 10, 0.5]) {
+      for (const grid of [1, 10, 0.5, 0.1]) {
         for (const rotation of [0, 90, 180, 270] as Rotation[]) {
           for (const mirror of ['none', 'horizontal'] as const) {
             const positions = pinPositions(definition, { x: 4 * grid, y: -2 * grid, rotation, mirror }, grid)
             for (const point of Object.values(positions)) {
-              expect(Number.isInteger(point.x / grid)).toBe(true)
-              expect(Number.isInteger(point.y / grid)).toBe(true)
+              expect(isGridCoordinate(point.x, grid)).toBe(true)
+              expect(isGridCoordinate(point.y, grid)).toBe(true)
             }
           }
         }
@@ -338,6 +338,19 @@ describe('symbols and storage', () => {
     expect(Object.values(builtInSymbols).filter(s => s.spice.globalNet)).toHaveLength(1)
     expect(pinPositions(builtInSymbols.bjt, { ...placement, rotation: 90, mirror: 'horizontal' }, 10).base)
       .toEqual({ x: 0, y: 20 })
+  })
+
+  it('accepts fractional grid roundoff without accepting off-grid positions', () => {
+    const history = new DocumentHistory(createDocument({ grid: 0.1 }))
+    const id = addComponent(history)
+    history.execute({ type: 'moveComponent', id, position: { x: 0.3, y: -0.3 } })
+    expect(loadDocument(serializeDocument(history.document))).toEqual(history.document)
+    expect(isGridCoordinate(0.3, 0.1)).toBe(true)
+    expect(isGridCoordinate(0.31, 0.1)).toBe(false)
+    expect(isGridCoordinate(Infinity, 1)).toBe(false)
+    expect(isGridCoordinate(1, 0)).toBe(false)
+    expect(isGridCoordinate(Number.MAX_SAFE_INTEGER + 1, 1)).toBe(false)
+    expect(() => history.execute({ type: 'moveComponent', id, position: { x: 0.31, y: 0 } })).toThrow('grid')
   })
 
   it('upgrades v0 through a migration and rejects missing, newer, or broken migrations', () => {

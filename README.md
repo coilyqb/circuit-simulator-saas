@@ -118,6 +118,7 @@ History retains claimed IDs across deletion, undo, and canceled gestures;
 this registry is session-local, not saved content. Fresh Nano IDs avoid intentional
 reuse after reload. Load through `loadDocument` to upgrade old JSON; each migration
 advances one schema version, and missing/newer versions are rejected.
+Collection iteration order has no semantic meaning; no z-order is stored in M1.
 
 ## Features
 

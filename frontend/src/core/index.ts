@@ -1,5 +1,6 @@
 export * from './model/types'
 export * from './model/schema'
+export * from './model/grid'
 export * from './symbols'
 export * from './commands/commands'
 export * from './commands/history'
